@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ page_title ?? 'TicketFlow' }} - {{ app_name }}</title>
+    <meta name="description" content="Manage your tickets with ease using TicketFlow">
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="/assets/css/design-tokens.css">
+    <link rel="stylesheet" href="/assets/css/global.css">
+    <link rel="stylesheet" href="/assets/css/components.css">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/assets/images/favicon.svg">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar" role="navigation" aria-label="Main navigation">
+        <div class="navbar-container">
+            <div class="navbar-brand" onclick="window.location.href='/'">
+                <div class="navbar-logo" aria-hidden="true">
+                    <span>🎫</span>
+                </div>
+                <span class="navbar-brand-name">{{ app_name }}</span>
+            </div>
+
+            <div class="navbar-links" role="menubar">
+                <button class="navbar-link {{ current_page == '/' ? 'active' : '' }}" onclick="window.location.href='/'">
+                    Home
+                </button>
+
+                {% if isAuthenticated %}
+                    <button class="navbar-link {{ current_page == '/dashboard' ? 'active' : '' }}" onclick="window.location.href='/dashboard'">
+                        Dashboard
+                    </button>
+                    <button class="navbar-link {{ current_page == '/tickets' ? 'active' : '' }}" onclick="window.location.href='/tickets'">
+                        Tickets
+                    </button>
+                    <form method="POST" action="/auth/logout" style="display: inline;">
+                        <button type="submit" class="logout-btn" aria-label="Logout from your account">
+                            Logout
+                        </button>
+                    </form>
+                {% else %}
+                    <button class="login-btn" onclick="openLoginModal()" aria-label="Login to your account">
+                        Login
+                    </button>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <div class="footer-logo">
+                        <span>🎫</span>
+                    </div>
+                    <span class="footer-brand-name">{{ app_name }}</span>
+                </div>
+                <p class="footer-description">
+                    The modern way to track, manage, and resolve tickets.
+                </p>
+                <div class="footer-links">
+                    <a href="/" class="footer-link">Home</a>
+                    <a href="/dashboard" class="footer-link">Dashboard</a>
+                    <a href="/tickets" class="footer-link">Tickets</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 {{ app_name }}. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script src="/assets/js/app.js"></script>
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html>

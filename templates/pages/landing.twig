@@ -1,0 +1,257 @@
+{% extends 'layouts/base.twig' %}
+
+{% block content %}
+<div class="landing-page">
+    <!-- Hero Section with Wavy Background and Decorative Elements -->
+    <section class="hero-section" aria-labelledby="hero-title">
+        <div class="hero-decorative-circle-1" aria-hidden="true"></div>
+        <div class="hero-decorative-circle-2" aria-hidden="true"></div>
+        <div class="hero-decorative-dot-1" aria-hidden="true"></div>
+        <div class="hero-decorative-dot-2" aria-hidden="true"></div>
+        
+        <div class="hero-container container">
+            <div class="hero-badge">Seamless Ticket Management</div>
+            <h1 id="hero-title" class="hero-title">
+                Organize Everything<br />Effortlessly
+            </h1>
+            <p class="hero-description">
+                The modern way to track, manage, and resolve tickets. Beautiful interface, powerful features, zero complexity.
+            </p>
+            <div class="hero-buttons">
+                <button class="btn btn-primary btn-lg" onclick="openModal('signupModal')">
+                    Get Started Free
+                </button>
+                <button class="btn btn-secondary btn-lg" onclick="openModal('loginModal')">
+                    Login
+                </button>
+            </div>
+        </div>
+
+        <!-- Wave SVG at bottom -->
+        <div class="wave-background">
+            <svg viewBox="0 0 1440 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M0,64L80,69.3C160,75,320,85,480,80C640,75,800,53,960,48C1120,43,1280,53,1360,58.7L1440,64L1440,120L1360,120C1280,120,1120,120,960,120C800,120,640,120,480,120C320,120,160,120,80,120L0,120Z" fill="white"/>
+            </svg>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features-section">
+        <div class="container">
+            <h2 class="section-title">Why Choose TicketFlow?</h2>
+            <p class="section-subtitle">
+                Everything you need to manage tickets like a pro
+            </p>
+
+            <div class="features-grid">
+                <div class="card card-hoverable">
+                    <div class="feature-icon-wrapper">
+                        <span>📊</span>
+                    </div>
+                    <h3 class="feature-title">Real-time Analytics</h3>
+                    <p class="feature-description">
+                        Track ticket status and performance with beautiful dashboards and instant insights.
+                    </p>
+                </div>
+
+                <div class="card card-hoverable">
+                    <div class="feature-icon-wrapper">
+                        <span>⚡</span>
+                    </div>
+                    <h3 class="feature-title">Lightning Fast</h3>
+                    <p class="feature-description">
+                        Create, update, and resolve tickets in seconds with our intuitive interface.
+                    </p>
+                </div>
+
+                <div class="card card-hoverable">
+                    <div class="feature-icon-wrapper">
+                        <span>✅</span>
+                    </div>
+                    <h3 class="feature-title">Stay Organized</h3>
+                    <p class="feature-description">
+                        Priority levels, status tracking, and smart filtering keep everything in order.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section">
+        <!-- Decorative Circle for CTA Section -->
+        <div class="cta-decorative-circle" aria-hidden="true"></div>
+        
+        <div class="container">
+            <div class="cta-card">
+                <h2 class="cta-title">Ready to Transform Your Workflow?</h2>
+                <p class="cta-description">
+                    Join thousands of teams already using TicketFlow to streamline their operations
+                </p>
+                <button class="btn btn-secondary btn-lg" onclick="openModal('signupModal')">
+                    Start Free Today
+                </button>
+            </div>
+        </div>
+    </section>
+</div>
+
+<!-- Login Modal -->
+<div id="loginModal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <div>
+                <h3 class="modal-title">Welcome Back</h3>
+                <p class="modal-description">Log in to your account to continue</p>
+            </div>
+            <button class="modal-close" onclick="closeModal(document.getElementById('loginModal'))">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form method="POST" action="/auth/login" class="modal-form">
+                <div class="form-group">
+                    <label for="login-email" class="form-label">Email Address *</label>
+                    <input 
+                        type="email" 
+                        id="login-email" 
+                        name="email" 
+                        class="input" 
+                        placeholder="demo@ticketflow.com"
+                        required
+                        autocomplete="email"
+                    />
+                </div>
+
+                <div class="form-group">
+                    <label for="login-password" class="form-label">Password *</label>
+                    <input 
+                        type="password" 
+                        id="login-password" 
+                        name="password" 
+                        class="input" 
+                        placeholder="Enter your password"
+                        required
+                        autocomplete="current-password"
+                    />
+                </div>
+
+                <div class="modal-actions">
+                    <button type="submit" class="btn btn-primary btn-full">
+                        Log In
+                    </button>
+                </div>
+
+                <p class="text-center" style="margin-top: 1rem;">
+                    Don't have an account? 
+                    <button type="button" onclick="switchToSignup()" class="btn btn-ghost" style="padding: 0; text-decoration: underline;">
+                        Sign up
+                    </button>
+                </p>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Signup Modal -->
+<div id="signupModal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <div>
+                <h3 class="modal-title">Create Account</h3>
+                <p class="modal-description">Sign up to get started with TicketFlow</p>
+            </div>
+            <button class="modal-close" onclick="closeModal(document.getElementById('signupModal'))">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form method="POST" action="/auth/register" class="modal-form">
+                <div class="form-group">
+                    <label for="signup-name" class="form-label">Full Name *</label>
+                    <input 
+                        type="text" 
+                        id="signup-name" 
+                        name="name" 
+                        class="input" 
+                        placeholder="John Doe"
+                        required
+                        autocomplete="name"
+                    />
+                </div>
+
+                <div class="form-group">
+                    <label for="signup-email" class="form-label">Email Address *</label>
+                    <input 
+                        type="email" 
+                        id="signup-email" 
+                        name="email" 
+                        class="input" 
+                        placeholder="john@example.com"
+                        required
+                        autocomplete="email"
+                    />
+                </div>
+
+                <div class="form-group">
+                    <label for="signup-password" class="form-label">Password *</label>
+                    <input 
+                        type="password" 
+                        id="signup-password" 
+                        name="password" 
+                        class="input" 
+                        placeholder="At least 6 characters"
+                        required
+                        autocomplete="new-password"
+                    />
+                </div>
+
+                <div class="form-group">
+                    <label for="signup-confirm-password" class="form-label">Confirm Password *</label>
+                    <input 
+                        type="password" 
+                        id="signup-confirm-password" 
+                        name="confirmPassword" 
+                        class="input" 
+                        placeholder="Re-enter your password"
+                        required
+                        autocomplete="new-password"
+                    />
+                </div>
+
+                <div class="modal-actions">
+                    <button type="submit" class="btn btn-primary btn-full">
+                        Create Account
+                    </button>
+                </div>
+
+                <p class="text-center" style="margin-top: 1rem;">
+                    Already have an account? 
+                    <button type="button" onclick="switchToLogin()" class="btn btn-ghost" style="padding: 0; text-decoration: underline;">
+                        Log in
+                    </button>
+                </p>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function switchToSignup() {
+    closeModal(document.getElementById('loginModal'));
+    openModal('signupModal');
+}
+
+function switchToLogin() {
+    closeModal(document.getElementById('signupModal'));
+    openModal('loginModal');
+}
+
+// Show error message if present in URL
+document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const error = urlParams.get('error');
+    if (error) {
+        showToast(decodeURIComponent(error), 'error');
+    }
+});
+</script>
+{% endblock %}
