@@ -150,12 +150,19 @@ class TemplateEngine
             }
         }
         
-        // Handle {% if %} conditions
+        // Handle {% if %} conditions with {% else %} support
         $content = preg_replace_callback('/{%\s*if\s+(\w+)\s*%}(.*?){%\s*endif\s*%}/s', function($matches) use ($data) {
             $varName = trim($matches[1]);
             $blockContent = $matches[2];
             $value = $data[$varName] ?? $this->globals[$varName] ?? null;
-            return ($value && $value !== false && $value !== '') ? $blockContent : '';
+            $isTruthy = $value && $value !== false && $value !== '';
+            
+            // Handle {% else %} clause
+            if (preg_match('/(.*?){%\s*else\s*%}(.*?)$/s', $blockContent, $elseMatches)) {
+                return $isTruthy ? $elseMatches[1] : $elseMatches[2];
+            }
+            
+            return $isTruthy ? $blockContent : '';
         }, $content);
         
         // Merge with globals
@@ -259,6 +266,8 @@ $router->get('/dashboard', function() use ($templateEngine) {
     
     echo $templateEngine->render('pages/dashboard', [
         'user' => $user,
+        'isAuthenticated' => 'true',
+        'current_page' => '/dashboard',
         'userFirstName' => $userFirstName,
         'stats' => $stats,
         'recentTickets' => $recentTickets,
@@ -283,6 +292,8 @@ $router->get('/tickets', function() use ($templateEngine) {
     
     echo $templateEngine->render('pages/tickets', [
         'user' => $user,
+        'isAuthenticated' => 'true',
+        'current_page' => '/tickets',
         'tickets' => $tickets,
         'stats' => $stats,
         'filters' => $filters
