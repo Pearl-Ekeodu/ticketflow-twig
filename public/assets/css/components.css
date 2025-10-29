@@ -92,37 +92,63 @@
 }
 
 .logout-btn {
-  background: var(--color-red-500);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(to right, var(--color-rose-500), var(--color-rose-600));
   color: white;
   border: none;
-  padding: 0.5rem 0.75rem;
-  border-radius: var(--radius-md);
+  padding: 0.625rem 1.25rem;
+  border-radius: var(--radius-xl);
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 8px 20px rgba(244, 63, 94, 0.3);
 }
 
 .logout-btn:hover {
-  background: var(--color-red-600);
-  transform: translateY(-1px);
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 12px 30px rgba(244, 63, 94, 0.4);
+}
+
+.logout-btn:active {
+  transform: translateY(-1px) scale(1.03);
+}
+
+.logout-btn:focus-visible {
+  outline: 3px solid var(--color-rose-400);
+  outline-offset: 2px;
 }
 
 .login-btn {
-  background: var(--color-blue-500);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(to right, var(--color-blue-500), var(--color-cyan-500));
   color: white;
   border: none;
-  padding: 0.5rem 0.75rem;
-  border-radius: var(--radius-md);
+  padding: 0.625rem 1.25rem;
+  border-radius: var(--radius-xl);
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 10px 25px rgba(59, 130, 246, 0.3);
 }
 
 .login-btn:hover {
-  background: var(--color-blue-600);
-  transform: translateY(-1px);
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 20px 40px rgba(59, 130, 246, 0.4);
+}
+
+.login-btn:active {
+  transform: translateY(-1px) scale(1.03);
+}
+
+.login-btn:focus-visible {
+  outline: 3px solid var(--color-blue-400);
+  outline-offset: 2px;
 }
 
 /* Button Styles */
