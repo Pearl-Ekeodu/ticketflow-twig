@@ -1,0 +1,247 @@
+{% extends 'layouts/base.twig' %}
+
+{% block content %}
+<div class="dashboard-page">
+    <!-- Decorative Circles -->
+    <div class="dashboard-decorative-circle-1" aria-hidden="true"></div>
+    <div class="dashboard-decorative-circle-2" aria-hidden="true"></div>
+    
+    <div class="dashboard-content">
+        <div class="container">
+            <header class="dashboard-header">
+                <h1 class="dashboard-title">Dashboard</h1>
+                <p class="dashboard-subtitle">
+                    Welcome back{% if userFirstName %}, {{ userFirstName }}{% endif %}! Here's your ticket overview
+                </p>
+            </header>
+
+            <!-- Dashboard Tabs -->
+            <nav class="dashboard-tabs" role="tablist" aria-label="Dashboard sections">
+                <button 
+                    class="tab-button active" 
+                    onclick="setActiveTab('overview')"
+                    role="tab"
+                    aria-selected="true"
+                    id="overview-tab"
+                >
+                    Overview
+                </button>
+                <button 
+                    class="tab-button" 
+                    onclick="setActiveTab('activity')"
+                    role="tab"
+                    aria-selected="false"
+                    id="activity-tab"
+                >
+                    Recent Activity
+                </button>
+            </nav>
+
+            <!-- Tab Content: Overview -->
+            <div role="tabpanel" id="overview-panel" aria-labelledby="overview-tab">
+                <!-- Stats Grid -->
+                <section class="stats-grid" aria-label="Ticket statistics">
+                    <div class="stat-card">
+                        <div class="stat-icon-wrapper">
+                            <span>🎫</span>
+                        </div>
+                        <p class="stat-label">Total Tickets</p>
+                        <p class="stat-value">{{ stats.total }}</p>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon-wrapper">
+                            <span>⚠️</span>
+                        </div>
+                        <p class="stat-label">Open</p>
+                        <p class="stat-value">{{ stats.open }}</p>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon-wrapper">
+                            <span>🕒</span>
+                        </div>
+                        <p class="stat-label">In Progress</p>
+                        <p class="stat-value">{{ stats.inProgress }}</p>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon-wrapper">
+                            <span>✅</span>
+                        </div>
+                        <p class="stat-label">Closed</p>
+                        <p class="stat-value">{{ stats.closed }}</p>
+                    </div>
+                </section>
+
+                <!-- Quick Actions -->
+                <section class="actions-section" aria-label="Quick actions">
+                    <h2>Quick Actions</h2>
+                    <div class="actions-grid">
+                        <a href="/tickets" class="btn btn-primary btn-lg">Manage Tickets</a>
+                        <button class="btn btn-secondary btn-lg" onclick="openModal('createTicketModal')">
+                            Create New Ticket
+                        </button>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Tab Content: Activity -->
+            <div role="tabpanel" id="activity-panel" aria-labelledby="activity-tab" style="display: none;">
+                <section class="activity-section" aria-label="Recent ticket activity">
+                    <h2>Recent Activity</h2>
+                    <div class="activity-content">
+                        {% if recentTicketsCount == 0 %}
+                            <div class="empty-activity">
+                                <div class="empty-activity-icon">📝</div>
+                                <h3>No recent activity</h3>
+                                <p>Create your first ticket to see activity here</p>
+                                <button class="btn btn-primary" onclick="openModal('createTicketModal')">
+                                    Create Ticket
+                                </button>
+                            </div>
+                        {% else %}
+                            <div class="activity-list">
+                                {% for ticket in recentTickets %}
+                                    <div class="activity-item">
+                                        <div class="activity-item-header">
+                                            <h4 class="activity-item-title">{{ ticket.title }}</h4>
+                                            <span class="status-badge status-{{ ticket.status }}">
+                                                {% if ticket.status == 'open' %}Open
+                                                {% elseif ticket.status == 'in_progress' %}In Progress
+                                                {% else %}Closed
+                                                {% endif %}
+                                            </span>
+                                        </div>
+                                        {% if ticket.description_short %}
+                                            <p class="activity-item-description">
+                                                {{ ticket.description_short }}
+                                            </p>
+                                        {% endif %}
+                                        <div class="activity-item-meta">
+                                            <span class="activity-item-date">
+                                                Created: {{ ticket.created_at_formatted }}
+                                            </span>
+                                            {% if ticket.priority %}
+                                                <span class="activity-item-priority priority-{{ ticket.priority }}">
+                                                    {{ ticket.priority }}
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="activity-item-actions">
+                                            <a href="/tickets" class="btn btn-secondary btn-sm">
+                                                View Details
+                                            </a>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Ticket Modal -->
+    <div id="createTicketModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h3 class="modal-title">Create New Ticket</h3>
+                    <p class="modal-description">Fill in the details to create a new support ticket.</p>
+                </div>
+                <button class="modal-close" onclick="closeModal(document.getElementById('createTicketModal'))">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form method="POST" action="/tickets" class="modal-form">
+                    <div class="form-group">
+                        <label for="ticket-title" class="form-label">Title *</label>
+                        <input 
+                            type="text" 
+                            id="ticket-title" 
+                            name="title" 
+                            class="input" 
+                            placeholder="e.g., Database connection issue"
+                            required
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="ticket-description" class="form-label">Description</label>
+                        <textarea 
+                            id="ticket-description" 
+                            name="description" 
+                            class="input" 
+                            rows="4"
+                            placeholder="Provide a detailed description of the issue."
+                        ></textarea>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="ticket-status" class="form-label">Status *</label>
+                            <select id="ticket-status" name="status" class="form-select" required>
+                                <option value="open">Open</option>
+                                <option value="in_progress">In Progress</option>
+                                <option value="closed">Closed</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="ticket-priority" class="form-label">Priority</label>
+                            <select id="ticket-priority" name="priority" class="form-select">
+                                <option value="">Select priority (optional)</option>
+                                <option value="low">Low</option>
+                                <option value="medium">Medium</option>
+                                <option value="high">High</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="modal-actions">
+                        <button type="submit" class="btn btn-primary btn-full">
+                            Create Ticket
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="closeModal(document.getElementById('createTicketModal'))">
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let activeTab = 'overview';
+
+function setActiveTab(tab) {
+    activeTab = tab;
+    
+    // Hide all panels
+    document.getElementById('overview-panel').style.display = 'none';
+    document.getElementById('activity-panel').style.display = 'none';
+    
+    // Remove active class from all tabs
+    document.querySelectorAll('.tab-button').forEach(btn => {
+        btn.classList.remove('active');
+        btn.setAttribute('aria-selected', 'false');
+    });
+    
+    // Show selected panel and activate tab
+    if (tab === 'overview') {
+        document.getElementById('overview-panel').style.display = 'block';
+        document.getElementById('overview-tab').classList.add('active');
+        document.getElementById('overview-tab').setAttribute('aria-selected', 'true');
+    } else if (tab === 'activity') {
+        document.getElementById('activity-panel').style.display = 'block';
+        document.getElementById('activity-tab').classList.add('active');
+        document.getElementById('activity-tab').setAttribute('aria-selected', 'true');
+    }
+}
+</script>
+{% endblock %}
+

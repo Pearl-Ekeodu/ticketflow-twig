@@ -233,10 +233,36 @@ $router->get('/dashboard', function() use ($templateEngine) {
     $stats = $ticketModel->getStats($user['id']);
     $recentTickets = $ticketModel->getRecent($user['id'], 5);
     
+    // Process user name for display
+    $userFirstName = '';
+    if ($user && isset($user['name'])) {
+        $nameParts = explode(' ', $user['name']);
+        $userFirstName = $nameParts[0];
+    }
+    
+    // Process recent tickets for display
+    foreach ($recentTickets as &$ticket) {
+        if (isset($ticket['description']) && strlen($ticket['description']) > 100) {
+            $ticket['description_short'] = substr($ticket['description'], 0, 100) . '...';
+        } else {
+            $ticket['description_short'] = $ticket['description'] ?? '';
+        }
+        
+        // Format date
+        if (isset($ticket['created_at'])) {
+            $ticket['created_at_formatted'] = date('M d, Y h:i A', strtotime($ticket['created_at']));
+        } else {
+            $ticket['created_at_formatted'] = '';
+        }
+    }
+    unset($ticket);
+    
     echo $templateEngine->render('pages/dashboard', [
         'user' => $user,
+        'userFirstName' => $userFirstName,
         'stats' => $stats,
-        'recentTickets' => $recentTickets
+        'recentTickets' => $recentTickets,
+        'recentTicketsCount' => count($recentTickets)
     ]);
 });
 
