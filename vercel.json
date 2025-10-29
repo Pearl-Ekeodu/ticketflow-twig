@@ -7,7 +7,7 @@
     },
     {
       "src": "/(.*)",
-      "dest": "/vercel-redirect.html"
+      "dest": "/index.html"
     }
   ]
 }
