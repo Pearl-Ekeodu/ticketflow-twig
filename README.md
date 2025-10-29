@@ -195,6 +195,43 @@ The application is fully responsive with breakpoints:
 
 ## 🚀 Deployment
 
+### ⚠️ Important: PHP Hosting Options
+
+**Vercel** has limited PHP support and may not work well with SQLite databases and file-based sessions. For best results, consider these alternatives:
+
+### **Recommended: Railway** (Best for PHP Apps)
+```bash
+# Install Railway CLI
+npm i -g @railway/cli
+
+# Login and deploy
+railway login
+railway init
+railway up
+```
+
+### **Alternative: Render**
+1. Connect your GitHub repository
+2. Select "Web Service"
+3. Build Command: `composer install`
+4. Start Command: `php -S 0.0.0.0:$PORT -t public`
+5. Root Directory: `twig-version`
+
+### **Alternative: Heroku**
+```bash
+# Create Procfile
+echo "web: cd public && php -S 0.0.0.0:\$PORT" > Procfile
+
+# Deploy
+git push heroku main
+```
+
+### **Vercel Deployment** (Experimental)
+If you must use Vercel, a `vercel.json` file is included, but PHP support is limited:
+1. The `vercel.json` configuration routes all requests to PHP
+2. Note: SQLite may not work properly on Vercel's serverless environment
+3. Sessions may need to be stored differently
+
 ### Production Setup
 
 1. **Configure web server**
