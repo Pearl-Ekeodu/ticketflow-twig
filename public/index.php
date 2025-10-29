@@ -282,9 +282,16 @@ $router->post('/auth/login', function() {
 $router->post('/auth/register', function() {
     $authService = new \App\Services\AuthService();
     
-    $name = $_POST['name'] ?? '';
-    $email = $_POST['email'] ?? '';
+    $name = trim($_POST['name'] ?? '');
+    $email = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
+    $confirmPassword = $_POST['confirmPassword'] ?? '';
+    
+    // Validate password confirmation
+    if ($password !== $confirmPassword) {
+        header('Location: /?error=' . urlencode('Passwords do not match'));
+        exit;
+    }
     
     $result = $authService->register($name, $email, $password);
     

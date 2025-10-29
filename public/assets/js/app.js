@@ -77,6 +77,19 @@ function initializeForms() {
             
             input.addEventListener('input', function() {
                 clearFieldError(input);
+                
+                // If password field changes, re-validate confirm password
+                if (input.name === 'password') {
+                    const confirmPasswordField = form.querySelector('input[name="confirmPassword"]');
+                    if (confirmPasswordField && confirmPasswordField.value) {
+                        validateField(confirmPasswordField);
+                    }
+                }
+                
+                // If confirm password field changes, re-validate it
+                if (input.name === 'confirmPassword') {
+                    validateField(input);
+                }
             });
         });
     });
@@ -122,9 +135,12 @@ function validateField(field) {
     // Password confirmation validation
     if (fieldName === 'confirmPassword' && value) {
         const passwordField = document.querySelector('input[name="password"]');
-        if (passwordField && value !== passwordField.value) {
-            isValid = false;
-            errorMessage = 'Passwords do not match';
+        if (passwordField) {
+            const passwordValue = passwordField.value.trim();
+            if (value !== passwordValue) {
+                isValid = false;
+                errorMessage = 'Passwords do not match';
+            }
         }
     }
     
