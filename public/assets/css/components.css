@@ -389,6 +389,28 @@
   animation: modalSlideIn 0.3s ease-out;
 }
 
+/* Floating Animation for decorative circles */
+@keyframes float-slow {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-20px) rotate(5deg);
+  }
+}
+
+/* Pulse Glow Animation for decorative dots */
+@keyframes pulse-glow {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+}
+
 @keyframes modalSlideIn {
   from {
     opacity: 0;
@@ -646,7 +668,7 @@
   box-shadow: 
     0 0 40px rgba(255, 255, 255, 0.3),
     inset 0 0 60px rgba(255, 255, 255, 0.2);
-  animation: float 8s ease-in-out infinite;
+  animation: float-slow 8s ease-in-out infinite;
 }
 
 .hero-decorative-circle-2 {
@@ -663,7 +685,7 @@
   box-shadow: 
     0 0 40px rgba(255, 255, 255, 0.25),
     inset 0 0 60px rgba(255, 255, 255, 0.18);
-  animation: float 6s ease-in-out infinite reverse;
+  animation: float-slow 6s ease-in-out infinite reverse;
 }
 
 .hero-decorative-dot-1 {
@@ -676,7 +698,7 @@
   border: 2px solid rgba(255, 255, 255, 0.8);
   border-radius: 50%;
   box-shadow: 0 4px 12px rgba(255, 255, 255, 0.3);
-  animation: pulse 3s ease-in-out infinite;
+  animation: pulse-glow 3s ease-in-out infinite;
   z-index: 1;
 }
 
@@ -690,7 +712,7 @@
   border: 2px solid rgba(255, 255, 255, 0.7);
   border-radius: 50%;
   box-shadow: 0 4px 12px rgba(255, 255, 255, 0.25);
-  animation: pulse 3s ease-in-out infinite 1s;
+  animation: pulse-glow 3s ease-in-out infinite 1s;
   z-index: 1;
 }
 
@@ -800,6 +822,11 @@
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+.features-grid .card:hover {
+  box-shadow: var(--shadow-2xl);
+  transform: translateY(-4px);
+}
+
 .feature-icon-wrapper {
   width: 4rem;
   height: 4rem;
@@ -852,7 +879,32 @@
   box-shadow: 
     0 0 40px rgba(255, 255, 255, 0.2),
     inset 0 0 60px rgba(255, 255, 255, 0.1);
-  animation: float 12s ease-in-out infinite;
+  animation: float-slow 12s ease-in-out infinite;
+}
+
+/* CTA Section decorative blurs */
+.cta-section::before {
+  content: '';
+  position: absolute;
+  top: 2.5rem;
+  right: 2.5rem;
+  width: 18rem;
+  height: 18rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  filter: blur(60px);
+}
+
+.cta-section::after {
+  content: '';
+  position: absolute;
+  bottom: 2.5rem;
+  left: 2.5rem;
+  width: 24rem;
+  height: 24rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  filter: blur(80px);
 }
 
 .cta-card {
