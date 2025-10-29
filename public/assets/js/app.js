@@ -81,14 +81,19 @@ function initializeForms() {
                 // If password field changes, re-validate confirm password
                 if (input.name === 'password') {
                     const confirmPasswordField = form.querySelector('input[name="confirmPassword"]');
-                    if (confirmPasswordField && confirmPasswordField.value) {
+                    if (confirmPasswordField && confirmPasswordField.value.trim()) {
+                        // Clear error first, then validate
+                        clearFieldError(confirmPasswordField);
                         validateField(confirmPasswordField);
                     }
                 }
                 
                 // If confirm password field changes, re-validate it
                 if (input.name === 'confirmPassword') {
-                    validateField(input);
+                    // Clear error first when typing
+                    if (input.value.trim()) {
+                        validateField(input);
+                    }
                 }
             });
         });
@@ -114,6 +119,9 @@ function validateField(field) {
     let isValid = true;
     let errorMessage = '';
     
+    // Get the form this field belongs to
+    const form = field.closest('form');
+    
     // Required field validation
     if (field.hasAttribute('required') && !value) {
         isValid = false;
@@ -132,12 +140,12 @@ function validateField(field) {
         errorMessage = 'Password must be at least 6 characters long';
     }
     
-    // Password confirmation validation
-    if (fieldName === 'confirmPassword' && value) {
-        const passwordField = document.querySelector('input[name="password"]');
+    // Password confirmation validation - only validate if both fields have values
+    if (fieldName === 'confirmPassword' && value && form) {
+        const passwordField = form.querySelector('input[name="password"]');
         if (passwordField) {
             const passwordValue = passwordField.value.trim();
-            if (value !== passwordValue) {
+            if (passwordValue && value !== passwordValue) {
                 isValid = false;
                 errorMessage = 'Passwords do not match';
             }
