@@ -43,7 +43,7 @@
                         </button>
                     </form>
                 {% else %}
-                    <button class="login-btn" onclick="openLoginModal()" aria-label="Login to your account">
+                    <button class="login-btn" onclick="window.location.href='/?auth=login'" aria-label="Login to your account">
                         Login
                     </button>
                 {% endif %}
@@ -60,23 +60,22 @@
     <footer class="footer">
         <div class="container">
             <div class="footer-content">
-                <div class="footer-brand">
-                    <div class="footer-logo">
-                        <span>🎫</span>
+                <div class="footer-top">
+                    <div class="footer-brand">
+                        <div class="footer-logo">
+                            <span>🎫</span>
+                        </div>
+                        <span class="footer-brand-name">{{ app_name }}</span>
                     </div>
-                    <span class="footer-brand-name">{{ app_name }}</span>
+                    <p class="footer-copyright">
+                        © {{ current_year }} {{ app_name }}. All rights reserved.
+                    </p>
+                    <div class="footer-links">
+                        <a href="#privacy">Privacy</a>
+                        <a href="#terms">Terms</a>
+                        <a href="#contact">Contact</a>
+                    </div>
                 </div>
-                <p class="footer-description">
-                    The modern way to track, manage, and resolve tickets.
-                </p>
-                <div class="footer-links">
-                    <a href="/" class="footer-link">Home</a>
-                    <a href="/dashboard" class="footer-link">Dashboard</a>
-                    <a href="/tickets" class="footer-link">Tickets</a>
-                </div>
-            </div>
-            <div class="footer-bottom">
-                <p>&copy; 2025 {{ app_name }}. All rights reserved.</p>
             </div>
         </div>
     </footer>

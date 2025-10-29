@@ -190,6 +190,7 @@ $templateEngine = new TemplateEngine(TEMPLATES_PATH);
 // Add global variables
 $templateEngine->addGlobal('app_name', 'TicketFlow');
 $templateEngine->addGlobal('base_url', 'http://localhost:8000');
+$templateEngine->addGlobal('current_year', date('Y'));
 
 // Middleware for authentication check
 $router->middleware(function() use ($templateEngine) {
