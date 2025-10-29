@@ -122,14 +122,57 @@ class TemplateEngine
         
         $content = file_get_contents($templateFile);
         
+        // Handle {% extends %} directive
+        if (preg_match('/{%\s*extends\s+[\'"](.+?)[\'"]\s*%}/', $content, $matches)) {
+            $parentTemplate = trim($matches[1]);
+            $parentFile = $this->templateDir . '/' . $parentTemplate;
+            
+            if (file_exists($parentFile)) {
+                $parentContent = file_get_contents($parentFile);
+                
+                // Extract blocks from child template
+                preg_match_all('/{%\s*block\s+(\w+)\s*%}(.*?){%\s*endblock\s*%}/s', $content, $blockMatches);
+                $blocks = [];
+                foreach ($blockMatches[1] as $i => $blockName) {
+                    $blocks[$blockName] = $blockMatches[2][$i];
+                }
+                
+                // Replace blocks in parent template
+                foreach ($blocks as $blockName => $blockContent) {
+                    $parentContent = preg_replace(
+                        '/{%\s*block\s+' . preg_quote($blockName) . '\s*%}.*?{%\s*endblock\s*%}/s',
+                        $blockContent,
+                        $parentContent
+                    );
+                }
+                
+                $content = $parentContent;
+            }
+        }
+        
+        // Handle {% if %} conditions
+        $content = preg_replace_callback('/{%\s*if\s+(\w+)\s*%}(.*?){%\s*endif\s*%}/s', function($matches) use ($data) {
+            $varName = trim($matches[1]);
+            $blockContent = $matches[2];
+            $value = $data[$varName] ?? $this->globals[$varName] ?? null;
+            return ($value && $value !== false && $value !== '') ? $blockContent : '';
+        }, $content);
+        
         // Merge with globals
         $data = array_merge($this->globals, $data);
         
         // Simple template processing
         foreach ($data as $key => $value) {
-            $content = str_replace('{{ ' . $key . ' }}', htmlspecialchars($value), $content);
-            $content = str_replace('{{ ' . $key . '|raw }}', $value, $content);
+            // Handle null values to prevent deprecation warnings
+            $safeValue = $value !== null ? htmlspecialchars((string)$value) : '';
+            $rawValue = $value !== null ? (string)$value : '';
+            
+            $content = str_replace('{{ ' . $key . ' }}', $safeValue, $content);
+            $content = str_replace('{{ ' . $key . '|raw }}', $rawValue, $content);
         }
+        
+        // Remove any remaining Twig syntax that wasn't processed
+        $content = preg_replace('/{%\s*.*?%\}/', '', $content);
         
         return $content;
     }
@@ -176,7 +219,8 @@ $router->get('/', function() use ($templateEngine) {
     
     echo $templateEngine->render('pages/landing', [
         'user' => $user,
-        'isAuthenticated' => $authService->isAuthenticated()
+        'isAuthenticated' => $authService->isAuthenticated() ? 'true' : '',
+        'current_page' => '/'
     ]);
 });
 
