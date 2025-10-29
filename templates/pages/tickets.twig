@@ -6,9 +6,9 @@
     <div class="tickets-decorative-circle-1" aria-hidden="true"></div>
     <div class="tickets-decorative-circle-2" aria-hidden="true"></div>
     
-    <div class="tickets-content">
-        <div class="container">
-            <div class="tickets-header">
+    <div class="tickets-content-wrapper">
+        <div class="tickets-header-section">
+            <div class="container">
                 <div class="tickets-header-content">
                     <div class="tickets-title-section">
                         <h1 class="tickets-title">Ticket Management</h1>
@@ -19,6 +19,10 @@
                     </button>
                 </div>
             </div>
+        </div>
+
+        <main class="tickets-main">
+            <div class="container">
 
             <!-- Filter and Search -->
             <section class="filters-section" aria-label="Ticket filters and search">
@@ -73,78 +77,83 @@
             </section>
 
             <!-- Tickets Grid -->
-            <section class="tickets-grid" aria-label="Tickets list">
-                <div id="empty-state" class="empty-state" style="display: none;">
-                    <div class="empty-state-icon">🎫</div>
-                    <h3 id="empty-title">No tickets yet</h3>
-                    <p id="empty-description">
-                        Create your first ticket to get started
-                    </p>
-                    <button class="btn btn-primary" onclick="openModal('createTicketModal')">
-                        Create Ticket
-                    </button>
-                </div>
+            <section class="tickets-grid-section">
+                {% if tickets|length == 0 %}
+                    <div class="empty-state">
+                        <div class="empty-icon">🎫</div>
+                        <h2 class="empty-title">No tickets yet</h2>
+                        <p class="empty-description">
+                            Get started by creating your first ticket
+                        </p>
+                        <button class="btn btn-primary" onclick="openModal('createTicketModal')">
+                            Create Your First Ticket
+                        </button>
+                    </div>
+                {% else %}
+                    <div class="tickets-grid">
+                        {% for ticket in tickets %}
+                        <div class="card card-hoverable">
+                            <div class="ticket-card" data-status="{{ ticket.status }}" data-title="{{ ticket.title|lower }}" data-description="{{ (ticket.description ?? '')|lower }}">
+                                <div class="ticket-header">
+                                    <h3 class="ticket-title">{{ ticket.title }}</h3>
+                                    <div class="ticket-badges">
+                                        <span class="status-badge status-{{ ticket.status }}">
+                                            {% if ticket.status == 'open' %}Open
+                                            {% elseif ticket.status == 'in_progress' %}In Progress
+                                            {% else %}Closed
+                                            {% endif %}
+                                        </span>
+                                        {% if ticket.priority %}
+                                            <span class="priority-badge priority-{{ ticket.priority }}">
+                                                {{ ticket.priority|upper }}
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
 
-                <div id="tickets-list" class="tickets-list">
-                    {% for ticket in tickets %}
-                    <div class="ticket-card" data-status="{{ ticket.status }}" data-title="{{ ticket.title|lower }}" data-description="{{ (ticket.description ?? '')|lower }}">
-                        <div class="ticket-header">
-                            <h3 class="ticket-title">{{ ticket.title }}</h3>
-                            <div class="ticket-badges">
-                                <span class="status-badge status-{{ ticket.status }}">
-                                    {% if ticket.status == 'open' %}Open
-                                    {% elseif ticket.status == 'in_progress' %}In Progress
-                                    {% else %}Closed
-                                    {% endif %}
-                                </span>
-                                {% if ticket.priority %}
-                                    <span class="priority-badge priority-{{ ticket.priority }}">
-                                        {{ ticket.priority|upper }}
-                                    </span>
+                                {% if ticket.description %}
+                                    <p class="ticket-description">
+                                        {% if ticket.description|length > 150 %}
+                                            {{ ticket.description|slice(0, 150) }}...
+                                        {% else %}
+                                            {{ ticket.description }}
+                                        {% endif %}
+                                    </p>
                                 {% endif %}
+
+                                <div class="ticket-meta">
+                                    <span class="ticket-date">
+                                        Created: {{ ticket.created_at_formatted }}
+                                    </span>
+                                    {% if ticket.updated_at != ticket.created_at %}
+                                        <span class="ticket-date">
+                                            Updated: {{ ticket.updated_at_formatted }}
+                                        </span>
+                                    {% endif %}
+                                </div>
+
+                                <div class="ticket-actions">
+                                    <button 
+                                        class="btn btn-secondary btn-sm"
+                                        onclick="openEditModal({{ ticket.id }})"
+                                    >
+                                        Edit
+                                    </button>
+                                    <button 
+                                        class="btn btn-danger btn-sm"
+                                        onclick="openDeleteModal({{ ticket.id }})"
+                                    >
+                                        Delete
+                                    </button>
+                                </div>
                             </div>
                         </div>
-
-                        {% if ticket.description %}
-                            <p class="ticket-description">
-                                {% if ticket.description|length > 150 %}
-                                    {{ ticket.description|slice(0, 150) }}...
-                                {% else %}
-                                    {{ ticket.description }}
-                                {% endif %}
-                            </p>
-                        {% endif %}
-
-                        <div class="ticket-meta">
-                            <span class="ticket-date">
-                                Created: {{ ticket.created_at_formatted }}
-                            </span>
-                            {% if ticket.updated_at != ticket.created_at %}
-                                <span class="ticket-date">
-                                    Updated: {{ ticket.updated_at_formatted }}
-                                </span>
-                            {% endif %}
-                        </div>
-
-                        <div class="ticket-actions">
-                            <button 
-                                class="btn btn-secondary btn-sm"
-                                onclick="openEditModal({{ ticket.id }})"
-                            >
-                                Edit
-                            </button>
-                            <button 
-                                class="btn btn-danger btn-sm"
-                                onclick="openDeleteModal({{ ticket.id }})"
-                            >
-                                Delete
-                            </button>
-                        </div>
+                        {% endfor %}
                     </div>
-                    {% endfor %}
-                </div>
+                {% endif %}
             </section>
-        </div>
+            </div>
+        </main>
     </div>
 
     <!-- Create Ticket Modal -->
@@ -152,9 +161,9 @@
         <div class="modal-content">
             <div class="modal-header">
                 <div>
-                    <h3 class="modal-title">Create New Ticket</h3>
+                    <h2 id="modal-title" class="modal-title">Create New Ticket</h2>
                 </div>
-                <button class="modal-close" onclick="closeModal(document.getElementById('createTicketModal'))">&times;</button>
+                <button class="modal-close" onclick="closeModal(document.getElementById('createTicketModal'))" aria-label="Close modal" type="button">✕</button>
             </div>
             <div class="modal-body">
                 <form method="POST" action="/tickets" class="modal-form" id="createTicketForm">
@@ -221,9 +230,9 @@
         <div class="modal-content">
             <div class="modal-header">
                 <div>
-                    <h3 class="modal-title">Edit Ticket</h3>
+                    <h2 id="edit-modal-title" class="modal-title">Edit Ticket</h2>
                 </div>
-                <button class="modal-close" onclick="closeModal(document.getElementById('editTicketModal'))">&times;</button>
+                <button class="modal-close" onclick="closeModal(document.getElementById('editTicketModal'))" aria-label="Close modal" type="button">✕</button>
             </div>
             <div class="modal-body">
                 <form method="POST" action="/tickets/update" class="modal-form" id="editTicketForm">
@@ -291,9 +300,9 @@
         <div class="modal-content">
             <div class="modal-header">
                 <div>
-                    <h3 class="modal-title">Delete Ticket</h3>
+                    <h2 id="delete-modal-title" class="modal-title">Delete Ticket</h2>
                 </div>
-                <button class="modal-close" onclick="closeModal(document.getElementById('deleteTicketModal'))">&times;</button>
+                <button class="modal-close" onclick="closeModal(document.getElementById('deleteTicketModal'))" aria-label="Close modal" type="button">✕</button>
             </div>
             <div class="modal-body">
                 <div class="delete-modal-content">
@@ -348,6 +357,7 @@ function setStatusFilter(status) {
 
 function applyFilters() {
     const ticketCards = document.querySelectorAll('.ticket-card');
+    const ticketsGrid = document.querySelector('.tickets-grid');
     let visibleCount = 0;
     
     ticketCards.forEach(card => {
@@ -379,32 +389,59 @@ function applyFilters() {
         }
     });
     
-    // Show/hide empty state
-    const emptyState = document.getElementById('empty-state');
-    const ticketsList = document.getElementById('tickets-list');
-    if (visibleCount === 0) {
-        if (emptyState) {
-            emptyState.style.display = 'block';
-            const emptyTitle = document.getElementById('empty-title');
-            const emptyDescription = document.getElementById('empty-description');
+    // Show/hide empty state or tickets grid
+    const emptyState = document.querySelector('.empty-state');
+    
+    if (visibleCount === 0 && allTickets.length > 0) {
+        // There are tickets but none match the filters
+        if (ticketsGrid) {
+            ticketsGrid.style.display = 'none';
+        }
+        
+        // Create or update empty state
+        if (!emptyState || !emptyState.closest('.tickets-grid-section')) {
+            const gridSection = document.querySelector('.tickets-grid-section');
+            if (gridSection) {
+                gridSection.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">🎫</div>
+                        <h2 class="empty-title">${currentSearchQuery ? 'No tickets found' : 'No tickets yet'}</h2>
+                        <p class="empty-description">
+                            ${currentSearchQuery ? 'Try adjusting your search terms or filters' : 'Get started by creating your first ticket'}
+                        </p>
+                        <button class="btn btn-primary" onclick="openModal('createTicketModal')">
+                            ${currentSearchQuery ? 'Create Ticket' : 'Create Your First Ticket'}
+                        </button>
+                    </div>
+                `;
+            }
+        } else {
+            // Update existing empty state
+            const emptyTitle = emptyState.querySelector('.empty-title');
+            const emptyDescription = emptyState.querySelector('.empty-description');
+            const emptyButton = emptyState.querySelector('button');
+            
             if (emptyTitle) {
                 emptyTitle.textContent = currentSearchQuery ? 'No tickets found' : 'No tickets yet';
             }
             if (emptyDescription) {
                 emptyDescription.textContent = currentSearchQuery 
                     ? 'Try adjusting your search terms or filters' 
-                    : 'Create your first ticket to get started';
+                    : 'Get started by creating your first ticket';
+            }
+            if (emptyButton) {
+                emptyButton.textContent = currentSearchQuery ? 'Create Ticket' : 'Create Your First Ticket';
             }
         }
-        if (ticketsList) {
-            ticketsList.style.display = 'none';
+    } else if (visibleCount > 0) {
+        // Show tickets grid
+        if (ticketsGrid) {
+            ticketsGrid.style.display = 'grid';
         }
-    } else {
-        if (emptyState) {
-            emptyState.style.display = 'none';
-        }
-        if (ticketsList) {
-            ticketsList.style.display = 'grid';
+        
+        // Remove any dynamically created empty state
+        if (emptyState && emptyState.closest('.tickets-grid-section')) {
+            emptyState.remove();
         }
     }
 }
@@ -471,8 +508,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize filter counts
     updateFilterCounts();
     
-    // Check if we have tickets
-    applyFilters();
+    // Only apply filters if we have tickets (server-side already handles empty state)
+    if (allTickets.length > 0) {
+        applyFilters();
+    }
 });
 
 function updateFilterCounts() {
