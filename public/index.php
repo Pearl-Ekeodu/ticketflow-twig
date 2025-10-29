@@ -168,8 +168,67 @@ class TemplateEngine
         // Merge with globals
         $data = array_merge($this->globals, $data);
         
-        // Simple template processing
+        // Handle nested array access first (e.g., stats.total, ticket.title)
+        $content = preg_replace_callback('/{{\s*([\w\.]+)\s*}}/', function($matches) use ($data) {
+            $path = trim($matches[1]);
+            $keys = explode('.', $path);
+            
+            // Single key - handled by simple replacement below
+            if (count($keys) === 1) {
+                return $matches[0];
+            }
+            
+            $value = $data;
+            foreach ($keys as $key) {
+                if (is_array($value) && isset($value[$key])) {
+                    $value = $value[$key];
+                } else {
+                    return $matches[0]; // Return original if not found
+                }
+            }
+            
+            // Only convert to string if not array
+            if (is_array($value)) {
+                return $matches[0]; // Return original if still array
+            }
+            
+            return htmlspecialchars((string)$value);
+        }, $content);
+        
+        // Handle nested array access with raw filter
+        $content = preg_replace_callback('/{{\s*([\w\.]+)\s*\|\s*raw\s*}}/', function($matches) use ($data) {
+            $path = trim($matches[1]);
+            $keys = explode('.', $path);
+            
+            // Single key - handled by simple replacement below
+            if (count($keys) === 1) {
+                return $matches[0];
+            }
+            
+            $value = $data;
+            foreach ($keys as $key) {
+                if (is_array($value) && isset($value[$key])) {
+                    $value = $value[$key];
+                } else {
+                    return $matches[0]; // Return original if not found
+                }
+            }
+            
+            // Only convert to string if not array
+            if (is_array($value)) {
+                return $matches[0]; // Return original if still array
+            }
+            
+            return (string)$value;
+        }, $content);
+        
+        // Simple template processing - skip arrays to avoid warnings
         foreach ($data as $key => $value) {
+            // Skip arrays - they're handled above
+            if (is_array($value)) {
+                continue;
+            }
+            
             // Handle null values to prevent deprecation warnings
             $safeValue = $value !== null ? htmlspecialchars((string)$value) : '';
             $rawValue = $value !== null ? (string)$value : '';
