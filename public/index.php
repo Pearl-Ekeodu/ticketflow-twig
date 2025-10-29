@@ -150,14 +150,94 @@ class TemplateEngine
             }
         }
         
-        // Handle {% if %} conditions with {% else %} support
-        $content = preg_replace_callback('/{%\s*if\s+(\w+)\s*%}(.*?){%\s*endif\s*%}/s', function($matches) use ($data) {
-            $varName = trim($matches[1]);
+        // Merge with globals first so they're available for conditionals
+        $mergedData = array_merge($this->globals, $data);
+        
+        // Handle {% if %} conditions with {% else %} and {% elseif %} support
+        $content = preg_replace_callback('/{%\s*if\s+(.*?)\s*%}(.*?){%\s*endif\s*%}/s', function($matches) use ($mergedData) {
+            $condition = trim($matches[1]);
             $blockContent = $matches[2];
-            $value = $data[$varName] ?? $this->globals[$varName] ?? null;
-            $isTruthy = $value && $value !== false && $value !== '';
             
-            // Handle {% else %} clause
+            // Parse condition (e.g., "ticket.status == 'open'" or "ticket.priority")
+            $conditionParts = explode('==', $condition);
+            if (count($conditionParts) === 2) {
+                $leftSide = trim($conditionParts[0]);
+                $rightSide = trim($conditionParts[1], " \t\n\r\0\x0B'\"");
+                
+                // Handle nested access (e.g., "ticket.status")
+                $keys = explode('.', $leftSide);
+                $value = $mergedData;
+                foreach ($keys as $key) {
+                    if (is_array($value) && isset($value[$key])) {
+                        $value = $value[$key];
+                    } else {
+                        $value = null;
+                        break;
+                    }
+                }
+                
+                $isTruthy = (string)$value === $rightSide;
+            } else {
+                // Simple variable check
+                $varName = trim($condition);
+                $value = $mergedData[$varName] ?? null;
+                
+                // Check if value is truthy
+                $isTruthy = false;
+                if (is_string($value)) {
+                    $isTruthy = $value !== '' && $value !== '0' && strtolower($value) !== 'false';
+                } elseif (is_bool($value)) {
+                    $isTruthy = $value === true;
+                } elseif (is_array($value)) {
+                    $isTruthy = count($value) > 0;
+                } else {
+                    $isTruthy = !empty($value);
+                }
+            }
+            
+            // Handle {% elseif %} clauses
+            $elseifPattern = '/(.*?){%\s*elseif\s+(.*?)\s*%}(.*?)$/s';
+            if (preg_match_all($elseifPattern, $blockContent, $elseifMatches, PREG_SET_ORDER)) {
+                if ($isTruthy) {
+                    return $elseifMatches[0][1]; // Return the if block
+                }
+                
+                // Check elseif conditions
+                foreach ($elseifMatches as $elseifMatch) {
+                    $elseifCondition = trim($elseifMatch[2]);
+                    $elseifConditionParts = explode('==', $elseifCondition);
+                    
+                    if (count($elseifConditionParts) === 2) {
+                        $leftSide = trim($elseifConditionParts[0]);
+                        $rightSide = trim($elseifConditionParts[1], " \t\n\r\0\x0B'\"");
+                        
+                        $keys = explode('.', $leftSide);
+                        $value = $mergedData;
+                        foreach ($keys as $key) {
+                            if (is_array($value) && isset($value[$key])) {
+                                $value = $value[$key];
+                            } else {
+                                $value = null;
+                                break;
+                            }
+                        }
+                        
+                        if ((string)$value === $rightSide) {
+                            return $elseifMatch[3]; // Return the elseif block
+                        }
+                    }
+                }
+                
+                // Check for {% else %} after elseif
+                $elsePattern = '/(.*?){%\s*else\s*%}(.*?)$/s';
+                if (preg_match($elsePattern, $blockContent, $elseMatches)) {
+                    return $elseMatches[2]; // Return the else block
+                }
+                
+                return ''; // No match
+            }
+            
+            // Handle simple {% else %} clause
             if (preg_match('/(.*?){%\s*else\s*%}(.*?)$/s', $blockContent, $elseMatches)) {
                 return $isTruthy ? $elseMatches[1] : $elseMatches[2];
             }
@@ -165,8 +245,75 @@ class TemplateEngine
             return $isTruthy ? $blockContent : '';
         }, $content);
         
-        // Merge with globals
-        $data = array_merge($this->globals, $data);
+        // Handle {% for %} loops BEFORE variable substitution
+        $content = preg_replace_callback('/{%\s*for\s+(\w+)\s+in\s+(\w+)\s*%}(.*?){%\s*endfor\s*%}/s', function($matches) use ($mergedData) {
+            $loopVar = trim($matches[1]); // e.g., "ticket"
+            $arrayVar = trim($matches[2]); // e.g., "tickets"
+            $loopContent = $matches[3];
+            
+            $items = $mergedData[$arrayVar] ?? [];
+            $result = '';
+            
+            foreach ($items as $item) {
+                $itemContent = $loopContent;
+                
+                // Replace variables like {{ ticket.title }}
+                if (is_array($item)) {
+                    foreach ($item as $key => $value) {
+                        if (!is_array($value)) {
+                            $itemContent = str_replace("{{ {$loopVar}.{$key} }}", htmlspecialchars((string)$value), $itemContent);
+                            $itemContent = str_replace("{{ {$loopVar}.{$key}|raw }}", (string)$value, $itemContent);
+                        }
+                    }
+                }
+                
+                // Process any filters within the loop
+                $itemContent = preg_replace_callback('/{{\s*([^|}]+)\s*\|([^}]+)}}/', function($filterMatches) use ($loopVar, $item) {
+                    $varName = trim($filterMatches[1]);
+                    $filters = trim($filterMatches[2]);
+                    
+                    // Extract the property name after the loop variable
+                    if (strpos($varName, $loopVar . '.') === 0) {
+                        $propName = substr($varName, strlen($loopVar) + 1);
+                        $value = $item[$propName] ?? '';
+                    } else {
+                        $value = '';
+                    }
+                    
+                    // Apply filters
+                    if (strpos($filters, 'lower') !== false) {
+                        $value = strtolower((string)$value);
+                    }
+                    if (strpos($filters, 'upper') !== false) {
+                        $value = strtoupper((string)$value);
+                    }
+                    if (strpos($filters, 'length') !== false) {
+                        $value = is_array($value) ? count($value) : strlen((string)$value);
+                    }
+                    if (preg_match('/slice\((\d+),?\s*(\d+)?\)/', $filters, $sliceMatches)) {
+                        $start = (int)$sliceMatches[1];
+                        $length = isset($sliceMatches[2]) ? (int)$sliceMatches[2] : null;
+                        $value = $length ? substr((string)$value, $start, $length) : substr((string)$value, $start);
+                    }
+                    
+                    if (strpos($filters, 'raw') !== false) {
+                        return (string)$value;
+                    }
+                    
+                    return htmlspecialchars((string)$value);
+                }, $itemContent);
+                
+                // Process if statements within the loop
+                $itemContent = $this->processIfStatements($itemContent, [$loopVar => $item] + $mergedData);
+                
+                $result .= $itemContent;
+            }
+            
+            return $result;
+        }, $content);
+        
+        // Use merged data for variable substitution
+        $data = $mergedData;
         
         // Handle nested array access first (e.g., stats.total, ticket.title)
         $content = preg_replace_callback('/{{\s*([\w\.]+)\s*}}/', function($matches) use ($data) {
@@ -222,6 +369,48 @@ class TemplateEngine
             return (string)$value;
         }, $content);
         
+        // Handle filters (json_encode, raw, lower, upper, slice, length)
+        $content = preg_replace_callback('/{{\s*([^|{}]+)\s*\|\s*json_encode\s*\|\s*raw\s*}}/', function($matches) use ($data) {
+            $varName = trim($matches[1]);
+            if (isset($data[$varName])) {
+                return json_encode($data[$varName]);
+            }
+            return '[]';
+        }, $content);
+        
+        // Handle simple variable substitution with filters
+        $content = preg_replace_callback('/{{\s*([^|}]+)\s*\|([^}]+)}}/', function($matches) use ($data) {
+            $varName = trim($matches[1]);
+            $filters = trim($matches[2]);
+            $value = $data[$varName] ?? '';
+            
+            // Apply filters
+            if (strpos($filters, 'raw') !== false) {
+                return (string)$value;
+            }
+            if (strpos($filters, 'lower') !== false) {
+                $value = strtolower((string)$value);
+            }
+            if (strpos($filters, 'upper') !== false) {
+                $value = strtoupper((string)$value);
+            }
+            if (strpos($filters, 'length') !== false) {
+                $value = is_array($value) ? count($value) : strlen((string)$value);
+            }
+            if (preg_match('/slice\((\d+),?\s*(\d+)?\)/', $filters, $sliceMatches)) {
+                $start = (int)$sliceMatches[1];
+                $length = isset($sliceMatches[2]) ? (int)$sliceMatches[2] : null;
+                $value = $length ? substr((string)$value, $start, $length) : substr((string)$value, $start);
+            }
+            
+            // Check for raw at the end
+            if (strpos($filters, 'raw') !== false) {
+                return (string)$value;
+            }
+            
+            return htmlspecialchars((string)$value);
+        }, $content);
+        
         // Simple template processing - skip arrays to avoid warnings
         foreach ($data as $key => $value) {
             // Skip arrays - they're handled above
@@ -237,6 +426,14 @@ class TemplateEngine
             $content = str_replace('{{ ' . $key . '|raw }}', $rawValue, $content);
         }
         
+        // Process template variables within strings (like in data attributes or inline styles)
+        $content = preg_replace_callback('/data-title="([^"]*)"/', function($matches) use ($data) {
+            // Handle nested variable access in data attributes
+            $content = $matches[1];
+            // For now, just return as-is since the template engine should have already processed it
+            return $matches[0];
+        }, $content);
+        
         // Remove any remaining Twig syntax that wasn't processed
         $content = preg_replace('/{%\s*.*?%\}/', '', $content);
         
@@ -246,6 +443,84 @@ class TemplateEngine
     public function addGlobal(string $key, $value): void
     {
         $this->globals[$key] = $value;
+    }
+    
+    private function processIfStatements(string $content, array $data): string
+    {
+        return preg_replace_callback('/{%\s*if\s+(.*?)\s*%}(.*?){%\s*endif\s*%}/s', function($matches) use ($data) {
+            $condition = trim($matches[1]);
+            $blockContent = $matches[2];
+            
+            // Parse condition
+            $conditionParts = explode('==', $condition);
+            if (count($conditionParts) === 2) {
+                $leftSide = trim($conditionParts[0]);
+                $rightSide = trim($conditionParts[1], " \t\n\r\0\x0B'\"");
+                
+                $keys = explode('.', $leftSide);
+                $value = $data;
+                foreach ($keys as $key) {
+                    if (is_array($value) && isset($value[$key])) {
+                        $value = $value[$key];
+                    } else {
+                        $value = null;
+                        break;
+                    }
+                }
+                
+                $isTruthy = (string)$value === $rightSide;
+            } else {
+                $varName = trim($condition);
+                $value = $data[$varName] ?? null;
+                $isTruthy = !empty($value);
+            }
+            
+            // Handle {% elseif %}
+            $elseifPattern = '/(.*?){%\s*elseif\s+(.*?)\s*%}(.*?)$/s';
+            if (preg_match_all($elseifPattern, $blockContent, $elseifMatches, PREG_SET_ORDER)) {
+                if ($isTruthy) {
+                    return $elseifMatches[0][1];
+                }
+                
+                foreach ($elseifMatches as $elseifMatch) {
+                    $elseifCondition = trim($elseifMatch[2]);
+                    $elseifConditionParts = explode('==', $elseifCondition);
+                    
+                    if (count($elseifConditionParts) === 2) {
+                        $leftSide = trim($elseifConditionParts[0]);
+                        $rightSide = trim($elseifConditionParts[1], " \t\n\r\0\x0B'\"");
+                        
+                        $keys = explode('.', $leftSide);
+                        $value = $data;
+                        foreach ($keys as $key) {
+                            if (is_array($value) && isset($value[$key])) {
+                                $value = $value[$key];
+                            } else {
+                                $value = null;
+                                break;
+                            }
+                        }
+                        
+                        if ((string)$value === $rightSide) {
+                            return $elseifMatch[3];
+                        }
+                    }
+                }
+                
+                $elsePattern = '/(.*?){%\s*else\s*%}(.*?)$/s';
+                if (preg_match($elsePattern, $blockContent, $elseMatches)) {
+                    return $elseMatches[2];
+                }
+                
+                return '';
+            }
+            
+            if (preg_match('/(.*?){%\s*else\s*%}(.*?)$/s', $blockContent, $elseMatches)) {
+                return $isTruthy ? $elseMatches[1] : $elseMatches[2];
+            }
+            
+            return $isTruthy ? $blockContent : '';
+        }, $content);
     }
 }
 
@@ -258,9 +533,12 @@ $templateEngine->addGlobal('app_name', 'TicketFlow');
 $templateEngine->addGlobal('base_url', 'http://localhost:8000');
 $templateEngine->addGlobal('current_year', date('Y'));
 
-// Middleware for authentication check
+// Middleware for authentication check - add isAuthenticated to all templates
 $router->middleware(function() use ($templateEngine) {
     $authService = new \App\Services\AuthService();
+    
+    // Add isAuthenticated as a global so it's available in all templates
+    $templateEngine->addGlobal('isAuthenticated', $authService->isAuthenticated() ? 'true' : '');
     
     // Define protected routes
     $protectedRoutes = ['/dashboard', '/tickets'];
@@ -286,7 +564,6 @@ $router->get('/', function() use ($templateEngine) {
     
     echo $templateEngine->render('pages/landing', [
         'user' => $user,
-        'isAuthenticated' => $authService->isAuthenticated() ? 'true' : '',
         'current_page' => '/'
     ]);
 });
@@ -325,7 +602,6 @@ $router->get('/dashboard', function() use ($templateEngine) {
     
     echo $templateEngine->render('pages/dashboard', [
         'user' => $user,
-        'isAuthenticated' => 'true',
         'current_page' => '/dashboard',
         'userFirstName' => $userFirstName,
         'stats' => $stats,
@@ -340,22 +616,30 @@ $router->get('/tickets', function() use ($templateEngine) {
     
     $user = $authService->getCurrentUser();
     
-    // Get filters from query parameters
-    $filters = [
-        'status' => $_GET['status'] ?? 'all',
-        'search' => $_GET['search'] ?? ''
-    ];
-    
-    $tickets = $ticketModel->findByUserId($user['id'], $filters);
+    // Get all tickets for this user (filtering done client-side)
+    $tickets = $ticketModel->findByUserId($user['id'], []);
     $stats = $ticketModel->getStats($user['id']);
+    
+    // Format dates for tickets
+    foreach ($tickets as &$ticket) {
+        if (isset($ticket['created_at'])) {
+            $ticket['created_at_formatted'] = date('M d, Y h:i A', strtotime($ticket['created_at']));
+        } else {
+            $ticket['created_at_formatted'] = '';
+        }
+        if (isset($ticket['updated_at'])) {
+            $ticket['updated_at_formatted'] = date('M d, Y h:i A', strtotime($ticket['updated_at']));
+        } else {
+            $ticket['updated_at_formatted'] = $ticket['created_at_formatted'];
+        }
+    }
+    unset($ticket);
     
     echo $templateEngine->render('pages/tickets', [
         'user' => $user,
-        'isAuthenticated' => 'true',
         'current_page' => '/tickets',
         'tickets' => $tickets,
-        'stats' => $stats,
-        'filters' => $filters
+        'stats' => $stats
     ]);
 });
 
@@ -403,6 +687,109 @@ $router->post('/auth/logout', function() {
     $authService = new \App\Services\AuthService();
     $authService->logout();
     header('Location: /');
+    exit;
+});
+
+$router->post('/tickets', function() {
+    $authService = new \App\Services\AuthService();
+    if (!$authService->isAuthenticated()) {
+        header('Location: /');
+        exit;
+    }
+    
+    $user = $authService->getCurrentUser();
+    $ticketModel = new \App\Models\Ticket();
+    
+    // Validate input
+    $title = trim($_POST['title'] ?? '');
+    if (empty($title)) {
+        header('Location: /tickets?error=' . urlencode('Title is required'));
+        exit;
+    }
+    
+    $ticketData = [
+        'title' => $title,
+        'description' => trim($_POST['description'] ?? '') ?: null,
+        'status' => $_POST['status'] ?? 'open',
+        'priority' => !empty($_POST['priority']) ? $_POST['priority'] : null,
+        'user_id' => $user['id']
+    ];
+    
+    $ticketModel->create($ticketData);
+    
+    header('Location: /tickets?success=' . urlencode('Ticket created successfully'));
+    exit;
+});
+
+$router->post('/tickets/update', function() {
+    $authService = new \App\Services\AuthService();
+    if (!$authService->isAuthenticated()) {
+        header('Location: /');
+        exit;
+    }
+    
+    $user = $authService->getCurrentUser();
+    $ticketModel = new \App\Models\Ticket();
+    
+    $ticketId = (int)($_POST['ticket_id'] ?? 0);
+    if (!$ticketId) {
+        header('Location: /tickets?error=' . urlencode('Invalid ticket ID'));
+        exit;
+    }
+    
+    // Verify ticket belongs to user
+    $ticket = $ticketModel->findById($ticketId);
+    if (!$ticket || $ticket['user_id'] != $user['id']) {
+        header('Location: /tickets?error=' . urlencode('Ticket not found'));
+        exit;
+    }
+    
+    // Validate input
+    $title = trim($_POST['title'] ?? '');
+    if (empty($title)) {
+        header('Location: /tickets?error=' . urlencode('Title is required'));
+        exit;
+    }
+    
+    $updateData = [
+        'title' => $title,
+        'description' => trim($_POST['description'] ?? '') ?: null,
+        'status' => $_POST['status'] ?? $ticket['status'],
+        'priority' => !empty($_POST['priority']) ? $_POST['priority'] : null
+    ];
+    
+    $ticketModel->update($ticketId, $updateData);
+    
+    header('Location: /tickets?success=' . urlencode('Ticket updated successfully'));
+    exit;
+});
+
+$router->post('/tickets/delete', function() {
+    $authService = new \App\Services\AuthService();
+    if (!$authService->isAuthenticated()) {
+        header('Location: /');
+        exit;
+    }
+    
+    $user = $authService->getCurrentUser();
+    $ticketModel = new \App\Models\Ticket();
+    
+    $ticketId = (int)($_POST['ticket_id'] ?? 0);
+    if (!$ticketId) {
+        header('Location: /tickets?error=' . urlencode('Invalid ticket ID'));
+        exit;
+    }
+    
+    // Verify ticket belongs to user
+    $ticket = $ticketModel->findById($ticketId);
+    if (!$ticket || $ticket['user_id'] != $user['id']) {
+        header('Location: /tickets?error=' . urlencode('Ticket not found'));
+        exit;
+    }
+    
+    $ticketModel->delete($ticketId);
+    
+    header('Location: /tickets?success=' . urlencode('Ticket deleted successfully'));
     exit;
 });
 
