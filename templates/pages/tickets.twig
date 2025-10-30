@@ -92,60 +92,58 @@
                 {% else %}
                     <div class="tickets-grid">
                         {% for ticket in tickets %}
-                        <div class="card card-hoverable">
-                            <div class="ticket-card" data-status="{{ ticket.status }}" data-title="{{ ticket.title|lower }}" data-description="{{ (ticket.description ?? '')|lower }}">
-                                <div class="ticket-header">
-                                    <h3 class="ticket-title">{{ ticket.title }}</h3>
-                                    <div class="ticket-badges">
-                                        <span class="status-badge status-{{ ticket.status }}">
-                                            {% if ticket.status == 'open' %}Open
-                                            {% elseif ticket.status == 'in_progress' %}In Progress
-                                            {% else %}Closed
-                                            {% endif %}
-                                        </span>
-                                        {% if ticket.priority %}
-                                            <span class="priority-badge priority-{{ ticket.priority }}">
-                                                {{ ticket.priority|upper }}
-                                            </span>
+                        <div class="ticket-card card-hoverable" data-status="{{ ticket.status }}" data-title="{{ ticket.title|lower }}" data-description="{{ (ticket.description ?? '')|lower }}">
+                            <div class="ticket-header">
+                                <h3 class="ticket-title">{{ ticket.title }}</h3>
+                                <div class="ticket-badges">
+                                    <span class="status-badge status-{{ ticket.status }}">
+                                        {% if ticket.status == 'open' %}Open
+                                        {% elseif ticket.status == 'in_progress' %}In Progress
+                                        {% else %}Closed
                                         {% endif %}
-                                    </div>
-                                </div>
-
-                                {% if ticket.description %}
-                                    <p class="ticket-description">
-                                        {% if ticket.description|length > 150 %}
-                                            {{ ticket.description|slice(0, 150) }}...
-                                        {% else %}
-                                            {{ ticket.description }}
-                                        {% endif %}
-                                    </p>
-                                {% endif %}
-
-                                <div class="ticket-meta">
-                                    <span class="ticket-date">
-                                        Created: {{ ticket.created_at_formatted }}
                                     </span>
-                                    {% if ticket.updated_at != ticket.created_at %}
-                                        <span class="ticket-date">
-                                            Updated: {{ ticket.updated_at_formatted }}
+                                    {% if ticket.priority %}
+                                        <span class="priority-badge priority-{{ ticket.priority }}">
+                                            {{ ticket.priority|upper }}
                                         </span>
                                     {% endif %}
                                 </div>
+                            </div>
 
-                                <div class="ticket-actions">
-                                    <button 
-                                        class="btn btn-secondary btn-sm"
-                                        onclick="openEditModal({{ ticket.id }})"
-                                    >
-                                        Edit
-                                    </button>
-                                    <button 
-                                        class="btn btn-danger btn-sm"
-                                        onclick="openDeleteModal({{ ticket.id }})"
-                                    >
-                                        Delete
-                                    </button>
-                                </div>
+                            {% if ticket.description %}
+                                <p class="ticket-description">
+                                    {% if ticket.description|length > 150 %}
+                                        {{ ticket.description|slice(0, 150) }}...
+                                    {% else %}
+                                        {{ ticket.description }}
+                                    {% endif %}
+                                </p>
+                            {% endif %}
+
+                            <div class="ticket-meta">
+                                <span class="ticket-date">
+                                    Created: {{ ticket.created_at_formatted }}
+                                </span>
+                                {% if ticket.updated_at != ticket.created_at %}
+                                    <span class="ticket-date">
+                                        Updated: {{ ticket.updated_at_formatted }}
+                                    </span>
+                                {% endif %}
+                            </div>
+
+                            <div class="ticket-actions">
+                                <button 
+                                    class="btn btn-secondary btn-sm"
+                                    onclick="openEditModal({{ ticket.id }})"
+                                >
+                                    Edit
+                                </button>
+                                <button 
+                                    class="btn btn-danger btn-sm"
+                                    onclick="openDeleteModal({{ ticket.id }})"
+                                >
+                                    Delete
+                                </button>
                             </div>
                         </div>
                         {% endfor %}
@@ -382,7 +380,7 @@ function applyFilters() {
         }
         
         if (visible) {
-            card.style.display = 'block';
+            card.style.display = 'flex';
             visibleCount++;
         } else {
             card.style.display = 'none';
